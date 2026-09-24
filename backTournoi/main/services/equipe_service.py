@@ -1,7 +1,7 @@
 from typing import List, Optional
 
-from ..utils.data.data  import equipes, matchs, messages, get_equipe, get_tournoi, get_utilisateur
-from ..dto.equipe_dto import EquipeCreate
+from utils.data.data  import equipes, matchs, messages, get_equipe, get_tournoi, get_utilisateur
+from dto.equipe_dto import EquipeCreate
 
 
 class EquipeService:

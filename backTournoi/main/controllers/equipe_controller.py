@@ -2,8 +2,8 @@ from typing import List
 
 from fastapi import APIRouter, HTTPException, status
 
-from ..dto.equipe_dto import EquipeCreate, EquipeOut, EquipeDetailOut
-from ..services.equipe_service import EquipeService
+from dto.equipe_dto import EquipeCreate, EquipeOut, EquipeDetailOut
+from services.equipe_service import EquipeService
 
 router = APIRouter(prefix="/equipes", tags=["Equipes"])
 
