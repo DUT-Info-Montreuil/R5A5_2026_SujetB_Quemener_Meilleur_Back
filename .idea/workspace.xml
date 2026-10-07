@@ -5,7 +5,9 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="1b06f3d9-b302-4cc8-b65c-0630beff8535" name="Changes" comment="Création de la branche match et de ses fichier (controller, service, dto)">
-      <change beforePath="$PROJECT_DIR$/backTournoi/main/utils/data/data.py" beforeDir="false" afterPath="$PROJECT_DIR$/backTournoi/main/utils/data/data.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/inspectionProfiles/profiles_settings.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/inspectionProfiles/profiles_settings.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backTournoi/tests/main_test.py" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -54,13 +56,14 @@
   "keyToString": {
     "ModuleVcsDetector.initialDetectionPerformed": "true",
     "Python tests.Python tests in equipe_test.py.executor": "Run",
+    "Python tests.Python tests in message_test.py.executor": "Run",
     "Python tests.Python tests in test_match.py.executor": "Run",
     "Python tests.Python tests in tournoi_test.py.executor": "Run",
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
     "RunOnceActivity.git.unshallow": "true",
-    "git-widget-placeholder": "tournoi",
-    "last_opened_file_path": "C:/Users/Isidore/PycharmProjects/R5A5_2026_SujetB_Quemener_Meilleur_Back/backTournoi/tests",
+    "git-widget-placeholder": "messages",
+    "last_opened_file_path": "C:/Users/Isidore/PycharmProjects/R5A5_2026_SujetB_Quemener_Meilleur_Back/backTournoi/main/services",
     "node.js.detected.package.eslint": "true",
     "node.js.detected.package.tslint": "true",
     "node.js.selected.package.eslint": "(autodetect)",
@@ -72,13 +75,36 @@
 }]]></component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
+      <recent name="C:\Users\Isidore\PycharmProjects\R5A5_2026_SujetB_Quemener_Meilleur_Back\backTournoi\main\services" />
       <recent name="C:\Users\Isidore\PycharmProjects\R5A5_2026_SujetB_Quemener_Meilleur_Back\backTournoi\tests" />
       <recent name="C:\Users\Isidore\PycharmProjects\R5A5_2026_SujetB_Quemener_Meilleur_Back\backTournoi\main\controllers" />
-      <recent name="C:\Users\Isidore\PycharmProjects\R5A5_2026_SujetB_Quemener_Meilleur_Back\backTournoi\main\services" />
       <recent name="C:\Users\Isidore\PycharmProjects\R5A5_2026_SujetB_Quemener_Meilleur_Back\backTournoi\main\dto" />
     </key>
   </component>
-  <component name="RunManager" selected="Python tests.Python tests in tournoi_test.py">
+  <component name="RunManager" selected="Python tests.Python tests in equipe_test.py">
+    <configuration name="main" type="PythonConfigurationType" factoryName="Python" nameIsGenerated="true">
+      <module name="R5A5_2026_SujetB_Quemener_Meilleur_Back" />
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/main.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
     <configuration name="Python tests in C:/Users/Isidore/PycharmProjects/R5A5_2026_SujetB_Quemener_Meilleur_Back/backTournoi/tests/test_match.py" type="tests" factoryName="Autodetect" temporary="true" nameIsGenerated="true">
       <module name="R5A5_2026_SujetB_Quemener_Meilleur_Back" />
       <option name="ENV_FILES" value="" />
@@ -111,6 +137,22 @@
       <option name="_new_targetType" value="&quot;PATH&quot;" />
       <method v="2" />
     </configuration>
+    <configuration name="Python tests in message_test.py" type="tests" factoryName="Autodetect" temporary="true" nameIsGenerated="true">
+      <module name="R5A5_2026_SujetB_Quemener_Meilleur_Back" />
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="_new_additionalArguments" value="&quot;&quot;" />
+      <option name="_new_target" value="&quot;$PROJECT_DIR$/backTournoi/tests/message_test.py&quot;" />
+      <option name="_new_targetType" value="&quot;PATH&quot;" />
+      <method v="2" />
+    </configuration>
     <configuration name="Python tests in tournoi_test.py" type="tests" factoryName="Autodetect" temporary="true" nameIsGenerated="true">
       <module name="R5A5_2026_SujetB_Quemener_Meilleur_Back" />
       <option name="ENV_FILES" value="" />
@@ -129,8 +171,9 @@
     </configuration>
     <recent_temporary>
       <list>
-        <item itemvalue="Python tests.Python tests in tournoi_test.py" />
         <item itemvalue="Python tests.Python tests in equipe_test.py" />
+        <item itemvalue="Python tests.Python tests in message_test.py" />
+        <item itemvalue="Python tests.Python tests in tournoi_test.py" />
         <item itemvalue="Python tests.Python tests in C:/Users/Isidore/PycharmProjects/R5A5_2026_SujetB_Quemener_Meilleur_Back/backTournoi/tests/test_match.py" />
       </list>
     </recent_temporary>
@@ -152,6 +195,8 @@
       <updated>1790251638679</updated>
       <workItem from="1790251640166" duration="2739000" />
       <workItem from="1790254803209" duration="3343000" />
+      <workItem from="1791409636078" duration="120000" />
+      <workItem from="1791409849042" duration="362000" />
     </task>
     <task id="LOCAL-00001" summary="Création de la branche match et de ses fichier (controller, service, dto)">
       <option name="closed" value="true" />
