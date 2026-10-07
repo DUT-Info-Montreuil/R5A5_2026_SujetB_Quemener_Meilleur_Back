@@ -5,9 +5,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="1b06f3d9-b302-4cc8-b65c-0630beff8535" name="Changes" comment="Création de la branche match et de ses fichier (controller, service, dto)">
-      <change beforePath="$PROJECT_DIR$/.idea/inspectionProfiles/profiles_settings.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/inspectionProfiles/profiles_settings.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backTournoi/tests/main_test.py" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -26,6 +24,11 @@
     </option>
   </component>
   <component name="Git.Settings">
+    <option name="RECENT_BRANCH_BY_REPOSITORY">
+      <map>
+        <entry key="$PROJECT_DIR$" value="messages" />
+      </map>
+    </option>
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
   <component name="GitHubPullRequestSearchHistory">{
@@ -62,8 +65,8 @@
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
     "RunOnceActivity.git.unshallow": "true",
-    "git-widget-placeholder": "messages",
-    "last_opened_file_path": "C:/Users/Isidore/PycharmProjects/R5A5_2026_SujetB_Quemener_Meilleur_Back/backTournoi/main/services",
+    "git-widget-placeholder": "users",
+    "last_opened_file_path": "C:/Users/Isidore/PycharmProjects/R5A5_2026_SujetB_Quemener_Meilleur_Back/backTournoi/main/dto",
     "node.js.detected.package.eslint": "true",
     "node.js.detected.package.tslint": "true",
     "node.js.selected.package.eslint": "(autodetect)",
@@ -81,7 +84,7 @@
       <recent name="C:\Users\Isidore\PycharmProjects\R5A5_2026_SujetB_Quemener_Meilleur_Back\backTournoi\main\dto" />
     </key>
   </component>
-  <component name="RunManager" selected="Python tests.Python tests in equipe_test.py">
+  <component name="RunManager" selected="Python tests.Python tests in utilisateur_test.py">
     <configuration name="main" type="PythonConfigurationType" factoryName="Python" nameIsGenerated="true">
       <module name="R5A5_2026_SujetB_Quemener_Meilleur_Back" />
       <option name="ENV_FILES" value="" />
@@ -169,8 +172,25 @@
       <option name="_new_targetType" value="&quot;PATH&quot;" />
       <method v="2" />
     </configuration>
+    <configuration name="Python tests in utilisateur_test.py" type="tests" factoryName="Autodetect" temporary="true" nameIsGenerated="true">
+      <module name="R5A5_2026_SujetB_Quemener_Meilleur_Back" />
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="_new_additionalArguments" value="&quot;&quot;" />
+      <option name="_new_target" value="&quot;$PROJECT_DIR$/backTournoi/tests/utilisateur_test.py&quot;" />
+      <option name="_new_targetType" value="&quot;PATH&quot;" />
+      <method v="2" />
+    </configuration>
     <recent_temporary>
       <list>
+        <item itemvalue="Python tests.Python tests in utilisateur_test.py" />
         <item itemvalue="Python tests.Python tests in equipe_test.py" />
         <item itemvalue="Python tests.Python tests in message_test.py" />
         <item itemvalue="Python tests.Python tests in tournoi_test.py" />
@@ -212,11 +232,22 @@
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="3" />
   </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="Création de la branche match et de ses fichier (controller, service, dto)" />
     <option name="LAST_COMMIT_MESSAGE" value="Création de la branche match et de ses fichier (controller, service, dto)" />
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
-    <SUITE FILE_PATH="coverage/R5A5_2026_SujetB_Quemener_Meilleur_Back$.coverage" NAME=" Coverage Results" MODIFIED="1790258048855" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/R5A5_2026_SujetB_Quemener_Meilleur_Back$.coverage" NAME=" Coverage Results" MODIFIED="1791410375988" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
   </component>
 </project>
