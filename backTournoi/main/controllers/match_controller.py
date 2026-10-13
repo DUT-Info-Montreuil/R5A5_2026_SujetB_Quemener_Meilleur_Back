@@ -2,8 +2,8 @@ from typing import List
 
 from fastapi import APIRouter, HTTPException, status
 
-from ..dto.match_dto import MatchCreate, MatchResponse, MatchUpdate
-from ..services.match_service import MatchService
+from backTournoi.main.dto.match_dto import MatchCreate, MatchResponse, MatchUpdate
+from backTournoi.main.services.match_service import MatchService
 
 router = APIRouter(prefix="/match", tags=["Match"])
 

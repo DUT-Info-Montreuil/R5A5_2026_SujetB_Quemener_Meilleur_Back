@@ -133,11 +133,11 @@ matchs = [
 ]
 
 messages = [
-    {"id": 1, "message": "Bienvenue dans l'équipe !", "date": "2026-09-19T18:00:00", "utilisateur_id": 1, "equipe_id": 1},
-    {"id": 2, "message": "Bon tournoi à tous !", "date": "2026-09-19T18:05:00", "utilisateur_id": 5, "equipe_id": 2},
-    {"id": 3, "message": "On est prêts !", "date": "2026-09-19T18:10:00", "utilisateur_id": 9, "equipe_id": 3},
-    {"id": 4, "message": "Rendez-vous demain matin.", "date": "2026-09-19T18:15:00", "utilisateur_id": 13, "equipe_id": 4},
-    {"id": 5, "message": "Bienvenue pour le deuxième tournoi !", "date": "2026-10-09T18:00:00", "utilisateur_id": 1, "equipe_id": 5},
+    {"id": 1, "message": "Bienvenue dans l'équipe !", "utilisateur_id": 1, "equipe_id": 1},
+    {"id": 2, "message": "Bon tournoi à tous !", "utilisateur_id": 5, "equipe_id": 2},
+    {"id": 3, "message": "On est prêts !", "utilisateur_id": 9, "equipe_id": 3},
+    {"id": 4, "message": "Rendez-vous demain matin.", "utilisateur_id": 13, "equipe_id": 4},
+    {"id": 5, "message": "Bienvenue pour le deuxième tournoi !", "utilisateur_id": 1, "equipe_id": 5},
 ]
 
 

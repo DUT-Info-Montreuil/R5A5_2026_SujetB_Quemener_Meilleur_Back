@@ -41,7 +41,6 @@ class MatchOut(BaseModel):
 class MessageOut(BaseModel):
     id: int
     message: str
-    date: str
     utilisateur_id: int
     equipe_id: int
 
