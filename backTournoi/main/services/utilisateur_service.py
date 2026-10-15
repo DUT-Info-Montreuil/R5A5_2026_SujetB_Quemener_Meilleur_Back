@@ -6,6 +6,7 @@ from backTournoi.main.utils.data.data import (
     messages,
     get_utilisateur,
 )
+from backTournoi.main.utils.security import hash_password
 from backTournoi.main.dto.utilisateur_dto import UtilisateurCreate, UtilisateurUpdate
 
 # Champs qui ne peuvent pas être mis à null lors d'un PATCH
@@ -47,7 +48,8 @@ class UtilisateurService:
 
     @staticmethod
     def creer_utilisateur(payload: UtilisateurCreate) -> dict:
-        """Crée un nouvel utilisateur. Le login doit être unique."""
+        """Crée un nouvel utilisateur. Le login doit être unique.
+        Le mot de passe est stocké haché (bcrypt)."""
         if any(u["login"] == payload.login for u in utilisateurs):
             raise ValueError(f"Le login '{payload.login}' existe déjà.")
 
@@ -56,7 +58,7 @@ class UtilisateurService:
         nouvel_utilisateur = {
             "id": nouvel_id,
             "login": payload.login,
-            "mdp": payload.mdp,
+            "mdp": hash_password(payload.mdp),
             "is_admin": payload.is_admin,
         }
 
@@ -85,6 +87,9 @@ class UtilisateurService:
             for u in utilisateurs
         ):
             raise ValueError(f"Le login '{modifications['login']}' existe déjà.")
+
+        if "mdp" in modifications:
+            modifications["mdp"] = hash_password(modifications["mdp"])
 
         utilisateur.update(modifications)
         return utilisateur

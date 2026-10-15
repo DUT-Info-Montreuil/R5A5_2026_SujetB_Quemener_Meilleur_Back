@@ -1,6 +1,6 @@
 from typing import List
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status
 
 from backTournoi.main.dto.utilisateur_dto import (
     UtilisateurCreate,
@@ -8,6 +8,7 @@ from backTournoi.main.dto.utilisateur_dto import (
     UtilisateurOut,
     UtilisateurDetailOut,
 )
+from backTournoi.main.services.auth_dependencies import get_current_user
 from backTournoi.main.services.utilisateur_service import UtilisateurService
 
 router = APIRouter(prefix="/utilisateurs", tags=["Utilisateurs"])
@@ -21,7 +22,8 @@ def get_utilisateurs():
 
 @router.post("/", response_model=UtilisateurOut, status_code=status.HTTP_201_CREATED)
 def post_utilisateur(payload: UtilisateurCreate):
-    """Crée un nouvel utilisateur."""
+    """Crée un nouvel utilisateur (le mot de passe est haché par le service).
+    Redondant avec /auth/register : peut être supprimé."""
     try:
         return UtilisateurService.creer_utilisateur(payload)
     except ValueError as e:
@@ -38,8 +40,16 @@ def get_utilisateur_detail(utilisateur_id: int):
 
 
 @router.patch("/{utilisateur_id}", response_model=UtilisateurOut)
-def patch_utilisateur(utilisateur_id: int, payload: UtilisateurUpdate):
-    """Modifie partiellement un utilisateur."""
+def patch_utilisateur(
+    utilisateur_id: int,
+    payload: UtilisateurUpdate,
+    current_user: dict = Depends(get_current_user),
+):
+    """Modifie partiellement un utilisateur. Chacun ne peut modifier que son propre compte."""
+    if current_user["id"] != utilisateur_id:
+        raise HTTPException(
+            status_code=403, detail="Vous ne pouvez modifier que votre propre compte."
+        )
     try:
         utilisateur = UtilisateurService.modifier_utilisateur(utilisateur_id, payload)
     except ValueError as e:
