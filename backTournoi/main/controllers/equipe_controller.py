@@ -1,8 +1,9 @@
 from typing import List
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status
 
 from backTournoi.main.dto.equipe_dto import EquipeCreate, EquipeOut, EquipeDetailOut
+from backTournoi.main.services.auth_dependencies import get_current_non_admin
 from backTournoi.main.services.equipe_service import EquipeService
 
 router = APIRouter(prefix="/equipes", tags=["Equipes"])
@@ -14,9 +15,14 @@ def get_equipes():
     return EquipeService.lister_equipes()
 
 
-@router.post("/", response_model=EquipeOut, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/",
+    response_model=EquipeOut,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(get_current_non_admin)],  # les admins ne créent pas d'équipe
+)
 def post_equipe(payload: EquipeCreate):
-    """Crée une nouvelle équipe."""
+    """Crée une nouvelle équipe (réservé aux non-administrateurs)."""
     try:
         return EquipeService.creer_equipe(payload)
     except ValueError as e:

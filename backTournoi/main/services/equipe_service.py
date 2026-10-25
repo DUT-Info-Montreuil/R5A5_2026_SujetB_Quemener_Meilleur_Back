@@ -48,6 +48,14 @@ class EquipeService:
         if not get_tournoi(payload.tournoi_id):
             raise ValueError(f"Le tournoi {payload.tournoi_id} n'existe pas.")
 
+        for uid in payload.joueurs_ids:
+            joueur = get_utilisateur(uid)
+            if joueur and joueur.get("is_admin"):
+                raise ValueError(
+                    f"'{joueur['login']}' est administrateur : "
+                    "un administrateur ne peut pas faire partie d'une équipe."
+                )
+
         nouvel_id = max((e["id"] for e in equipes), default=0) + 1
 
         nouvelle_equipe = {

@@ -27,3 +27,13 @@ def get_current_user(
     if not user:
         raise unauthorized
     return user
+
+
+def get_current_non_admin(current_user: dict = Depends(get_current_user)) -> dict:
+    """Comme get_current_user, mais refuse les administrateurs (403)."""
+    if current_user.get("is_admin"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Un administrateur ne peut pas créer ou rejoindre une équipe.",
+        )
+    return current_user
