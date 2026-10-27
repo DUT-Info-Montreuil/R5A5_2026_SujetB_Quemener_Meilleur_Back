@@ -2,6 +2,7 @@ from typing import List, Optional
 
 from ..utils.data.data import tournois, matchs, get_equipe, get_tournoi
 from ..dto.tournoi_dto import TournoiCreate, TournoiUpdate
+from .bracket_service import BracketService
 
 # Transitions de statut autorisées
 TRANSITIONS = {
@@ -32,12 +33,8 @@ class TournoiService:
         if not tournoi:
             return None
 
-        equipes_ids = tournoi["equipes_ids"]
-        tournoi_equipes = [e for e in (get_equipe(eid) for eid in equipes_ids) if e]
-        tournoi_matchs = [
-            m for m in matchs
-            if m["equipe1_id"] in equipes_ids or m["equipe2_id"] in equipes_ids
-        ]
+        tournoi_equipes = [e for e in (get_equipe(eid) for eid in tournoi["equipes_ids"]) if e]
+        tournoi_matchs = [m for m in matchs if m["tournoi_id"] == tournoi_id]
 
         return {
             **tournoi,
@@ -56,6 +53,7 @@ class TournoiService:
             "description": payload.description,
             "statut": "OUVERT",
             "jeu_id": payload.jeu_id,
+            "petite_finale": payload.petite_finale,
             "equipes_ids": [],
         }
 
@@ -65,6 +63,7 @@ class TournoiService:
     @staticmethod
     def modifier_tournoi(tournoi_id: int, payload: TournoiUpdate) -> Optional[dict]:
         """Modifie partiellement un tournoi (dont son statut).
+        Le passage à EN_COURS génère l'arbre (une seule fois).
         Retourne None si le tournoi n'existe pas, lève ValueError si la modification est invalide."""
         tournoi = get_tournoi(tournoi_id)
         if not tournoi:
@@ -72,19 +71,28 @@ class TournoiService:
 
         changements = payload.model_dump(mode="json", exclude_unset=True)
 
-        for champ in ("nom", "date_debut", "date_fin", "statut"):
+        for champ in ("nom", "date_debut", "date_fin", "statut", "petite_finale"):
             if champ in changements and changements[champ] is None:
                 raise ValueError(f"Le champ '{champ}' ne peut pas être null.")
 
+        if "petite_finale" in changements and tournoi["statut"] in ("EN_COURS", "TERMINE"):
+            raise ValueError("L'option petite finale ne peut plus être modifiée une fois le tournoi démarré.")
+
+        passe_en_cours = False
         if "statut" in changements:
             actuel, nouveau = tournoi["statut"], changements["statut"]
             if nouveau != actuel and nouveau not in TRANSITIONS.get(actuel, set()):
                 raise ValueError(f"Transition de statut interdite : {actuel} -> {nouveau}.")
+            passe_en_cours = nouveau == "EN_COURS" and actuel != "EN_COURS"
 
         debut = changements.get("date_debut", tournoi.get("date_debut"))
         fin = changements.get("date_fin", tournoi.get("date_fin"))
         if debut is not None and fin is not None and fin < debut:
             raise ValueError("date_fin doit être postérieure ou égale à date_debut.")
+
+        # Génération en dernier : si elle échoue (ex. < 2 équipes), rien n'a été modifié.
+        if passe_en_cours:
+            BracketService.generer({**tournoi, **changements})
 
         tournoi.update(changements)
         return tournoi

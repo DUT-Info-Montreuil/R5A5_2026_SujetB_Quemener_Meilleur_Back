@@ -1,29 +1,44 @@
-from typing import Optional
+from typing import List, Optional
 
-from pydantic import BaseModel
-
-
-class MatchCreate(BaseModel):
-    """Données attendues pour créer un match (POST /match)."""
-    equipe1_id: int
-    equipe2_id: int
-    score_equipe1: int = 0
-    score_equipe2: int = 0
+from pydantic import BaseModel, Field
 
 
-class MatchUpdate(BaseModel):
-    """Données modifiables d'un match (PUT /match/{match_id}).
-    Tous les champs sont optionnels : seuls ceux envoyés sont modifiés."""
+class MatchOut(BaseModel):
+    id: int
+    tournoi_id: int
+    round: int
+    position: int
     equipe1_id: Optional[int] = None
     equipe2_id: Optional[int] = None
     score_equipe1: Optional[int] = None
     score_equipe2: Optional[int] = None
+    vainqueur_id: Optional[int] = None
+    next_match_id: Optional[int] = None
+    next_slot: Optional[int] = None
+    loser_next_match_id: Optional[int] = None
+    loser_next_slot: Optional[int] = None
+    petite_finale: bool = False
+    bye: bool = False
 
 
-class MatchResponse(BaseModel):
-    """Données renvoyées au client."""
-    id: int
-    equipe1_id: int
-    equipe2_id: int
-    score_equipe1: int
-    score_equipe2: int
+class MatchScoreUpdate(BaseModel):
+    """Saisie / correction d'un résultat (scores = manches gagnées)."""
+    score_equipe1: int = Field(ge=0)
+    score_equipe2: int = Field(ge=0)
+
+
+class ArbreMatchOut(MatchOut):
+    equipe1_nom: Optional[str] = None
+    equipe2_nom: Optional[str] = None
+
+
+class ArbreRoundOut(BaseModel):
+    round: int
+    titre: str
+    matchs: List[ArbreMatchOut]
+
+
+class ArbreOut(BaseModel):
+    tournoi_id: int
+    rounds: List[ArbreRoundOut]
+    petite_finale: Optional[ArbreMatchOut] = None
