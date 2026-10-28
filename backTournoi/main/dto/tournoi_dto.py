@@ -3,6 +3,8 @@ from typing import List, Optional
 
 from pydantic import BaseModel, Field
 
+from backTournoi.main.dto.match_dto import MatchOut
+
 
 class StatutTournoi(str, Enum):
     """Statuts possibles d'un tournoi (doivent correspondre aux clés de TRANSITIONS)."""
@@ -18,6 +20,7 @@ class TournoiCreate(BaseModel):
     nom: str = Field(..., min_length=1, max_length=50)
     description: Optional[str] = None
     jeu_id: Optional[int] = None
+    petite_finale: bool = False
 
 
 class TournoiUpdate(BaseModel):
@@ -28,6 +31,7 @@ class TournoiUpdate(BaseModel):
     date_fin: Optional[str] = None
     jeu_id: Optional[int] = None
     statut: Optional[StatutTournoi] = None
+    petite_finale: Optional[bool] = None
 
 
 class EquipeOut(BaseModel):
@@ -40,18 +44,6 @@ class EquipeOut(BaseModel):
     model_config = {"from_attributes": True}
 
 
-class MatchOut(BaseModel):
-    """Représentation d'un match telle qu'exposée par l'API."""
-    id: int
-    date: str
-    equipe1_id: int
-    equipe2_id: int
-    score_equipe1: int
-    score_equipe2: int
-
-    model_config = {"from_attributes": True}
-
-
 class TournoiOut(BaseModel):
     """DTO de sortie pour un tournoi (liste, création, modification)."""
     id: int
@@ -60,6 +52,7 @@ class TournoiOut(BaseModel):
     statut: StatutTournoi
     jeu_id: Optional[int] = None
     equipes_ids: List[int] = []
+    petite_finale: bool = False
 
     model_config = {"from_attributes": True}
 
