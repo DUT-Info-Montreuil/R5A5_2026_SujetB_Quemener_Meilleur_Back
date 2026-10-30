@@ -7,25 +7,40 @@ from backTournoi.main.utils.data.data import get_utilisateur
 _bearer = HTTPBearer(auto_error=False)
 
 
+def _utilisateur_depuis_jeton(
+    credentials: HTTPAuthorizationCredentials | None,
+) -> dict | None:
+    """Renvoie l'utilisateur correspondant au jeton, ou None si le jeton est
+    absent, invalide, expiré ou si l'utilisateur n'existe plus."""
+    if credentials is None:
+        return None
+
+    user_id = AuthService.decode_token(credentials.credentials)
+    if user_id is None:
+        return None
+
+    return get_utilisateur(user_id) or None
+
+
+def get_optional_user(
+    credentials: HTTPAuthorizationCredentials | None = Depends(_bearer),
+) -> dict | None:
+    """Pour les routes publiques : renvoie l'utilisateur connecté, ou None pour un
+    visiteur. Ne lève jamais 401 (un jeton invalide ou expiré = simple visiteur)."""
+    return _utilisateur_depuis_jeton(credentials)
+
+
 def get_current_user(
     credentials: HTTPAuthorizationCredentials | None = Depends(_bearer),
 ) -> dict:
     """Exige un jeton valide et renvoie l'utilisateur connecté."""
-    unauthorized = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Authentification requise.",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
-    if credentials is None:
-        raise unauthorized
-
-    user_id = AuthService.decode_token(credentials.credentials)
-    if user_id is None:
-        raise unauthorized
-
-    user = get_utilisateur(user_id)
-    if not user:
-        raise unauthorized
+    user = _utilisateur_depuis_jeton(credentials)
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentification requise.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
     return user
 
 
