@@ -11,6 +11,7 @@ from controllers.match_controller import router as match_router
 from controllers.tournoi_controller import router as tournoi_router
 from controllers.utilisateur_controller import router as utilisateur_router
 from controllers.message_controller import router as message_router
+from controllers.demande_controller import router as demande_router
 
 app = FastAPI(
     title="Bouchon API",
@@ -38,6 +39,7 @@ app.include_router(match_router, dependencies=protected)
 app.include_router(tournoi_router, dependencies=protected)
 app.include_router(utilisateur_router, dependencies=protected)
 app.include_router(message_router, dependencies=protected)
+app.include_router(demande_router, dependencies=protected)
 
 # Ajout pour lancer le serveur au démarrage du script
 if __name__ == "__main__":

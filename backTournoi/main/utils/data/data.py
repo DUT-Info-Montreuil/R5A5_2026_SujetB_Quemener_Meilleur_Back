@@ -140,6 +140,14 @@ messages = [
     {"id": 5, "message": "Bienvenue pour le deuxième tournoi !", "utilisateur_id": 1, "equipe_id": 5},
 ]
 
+demandes = [
+    {"id": 1, "equipe_id": 2, "utilisateur_id": 2, "statut": "EN_ATTENTE"},
+    {"id": 2, "equipe_id": 4, "utilisateur_id": 3, "statut": "EN_ATTENTE"},
+    {"id": 3, "equipe_id": 3, "utilisateur_id": 4, "statut": "REFUSEE"},
+]
+
+def get_demande(demande_id: int):
+    return next((d for d in demandes if d["id"] == demande_id), None)
 
 def get_equipe(equipe_id: int):
     return next((e for e in equipes if e["id"] == equipe_id), None)
