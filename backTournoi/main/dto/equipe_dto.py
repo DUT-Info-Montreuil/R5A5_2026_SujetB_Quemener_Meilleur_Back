@@ -2,6 +2,10 @@ from typing import List, Optional
 
 from pydantic import BaseModel, Field
 
+# Même DTO de match que pour /matchs et /tournois : les matchs de l'arbre n'ont pas
+# de date et ont des scores/équipes à None tant qu'ils ne sont pas joués.
+from backTournoi.main.dto.match_dto import MatchOut
+
 
 class EquipeCreate(BaseModel):
     """DTO utilisé en entrée du POST /equipes/ pour créer une équipe."""
@@ -29,15 +33,6 @@ class JoueurOut(BaseModel):
     isAdmin: Optional[bool] = False
 
 
-class MatchOut(BaseModel):
-    id: int
-    date: str
-    equipe1_id: int
-    equipe2_id: int
-    score_equipe1: int
-    score_equipe2: int
-
-
 class MessageOut(BaseModel):
     id: int
     message: str
@@ -46,9 +41,13 @@ class MessageOut(BaseModel):
 
 
 class EquipeDetailOut(EquipeOut):
-    """DTO enrichi utilisé pour GET /equipes/{id}."""
+    """DTO enrichi utilisé pour GET /equipes/{id}.
+
+    `messages` vaut None quand l'appelant n'a pas le droit de lire le chat de
+    l'équipe (visiteur, ou utilisateur connecté non membre), et [] quand le chat
+    est lisible mais vide."""
 
     tournoi: Optional[dict] = None
     joueurs: List[Optional[JoueurOut]] = []
     matchs: List[MatchOut] = []
-    messages: List[MessageOut] = []
+    messages: Optional[List[MessageOut]] = None

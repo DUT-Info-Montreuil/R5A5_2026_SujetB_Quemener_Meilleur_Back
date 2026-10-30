@@ -31,11 +31,18 @@ app.add_middleware(
 # Routes publiques : inscription, connexion (et /auth/me qui vérifie le jeton lui-même)
 app.include_router(auth_router)
 
-# Toutes les autres routes exigent un jeton valide
+# Routeurs MIXTES : lecture publique (consultation des tournois, matchs, équipes),
+# écriture protégée. Aucune dépendance globale ici : chaque route d'écriture déclare
+# sa propre garde dans son contrôleur (get_current_admin / get_current_non_admin).
+# /!\ Toute nouvelle route ajoutée à ces routeurs est PUBLIQUE tant qu'elle n'a pas
+#     sa propre dépendance d'authentification.
+app.include_router(tournoi_router)
+app.include_router(match_router)
+app.include_router(equipe_router)
+
+# Routeurs ENTIÈREMENT PRIVÉS : un jeton valide est exigé sur toutes leurs routes
+# (refus par défaut).
 protected = [Depends(get_current_user)]
-app.include_router(equipe_router, dependencies=protected)
-app.include_router(match_router, dependencies=protected)
-app.include_router(tournoi_router, dependencies=protected)
 app.include_router(utilisateur_router, dependencies=protected)
 app.include_router(message_router, dependencies=protected)
 

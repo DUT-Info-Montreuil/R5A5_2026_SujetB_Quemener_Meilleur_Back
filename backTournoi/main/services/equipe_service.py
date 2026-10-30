@@ -18,9 +18,18 @@ class EquipeService:
         return get_equipe(equipe_id)
 
     @staticmethod
-    def obtenir_equipe_detail(equipe_id: int) -> Optional[dict]:
-        """Retourne une équipe enrichie avec son tournoi, ses joueurs,
-        ses matchs et ses messages."""
+    def peut_lire_messages(equipe: dict, utilisateur: Optional[dict]) -> bool:
+        """Le chat d'équipe n'est lisible que par les membres de l'équipe et par
+        les administrateurs. Un visiteur (utilisateur None) n'y a jamais accès."""
+        if utilisateur is None:
+            return False
+        return bool(utilisateur.get("is_admin")) or utilisateur["id"] in equipe["joueurs_ids"]
+
+    @staticmethod
+    def obtenir_equipe_detail(equipe_id: int, inclure_messages: bool = True) -> Optional[dict]:
+        """Retourne une équipe enrichie avec son tournoi, ses joueurs, ses matchs
+        et (si inclure_messages) ses messages. Sans droit de lecture, `messages`
+        vaut None. C'est au contrôleur de décider via peut_lire_messages."""
         equipe = get_equipe(equipe_id)
         if not equipe:
             return None
@@ -32,7 +41,11 @@ class EquipeService:
             m for m in matchs
             if m["equipe1_id"] == equipe_id or m["equipe2_id"] == equipe_id
         ]
-        equipe_messages = [m for m in messages if m["equipe_id"] == equipe_id]
+        equipe_messages = (
+            [m for m in messages if m["equipe_id"] == equipe_id]
+            if inclure_messages
+            else None
+        )
 
         return {
             **equipe,

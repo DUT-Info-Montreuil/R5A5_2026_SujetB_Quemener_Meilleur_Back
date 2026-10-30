@@ -18,13 +18,13 @@ from backTournoi.main.services.utilisateur_service import UtilisateurService
 class AuthService:
     @staticmethod
     def register(payload: RegisterPayload) -> dict:
-        """Crée un compte (le hachage est fait dans UtilisateurService).
-        Lève ValueError si le login existe déjà."""
+        """Crée un compte NON administrateur (le hachage est fait dans
+        UtilisateurService). Lève ValueError si le login existe déjà."""
         return UtilisateurService.creer_utilisateur(
             UtilisateurCreate(
                 login=payload.login.strip(),
                 mdp=payload.mot_de_passe,
-                is_admin=payload.is_admin,
+                is_admin=False,
             )
         )
 

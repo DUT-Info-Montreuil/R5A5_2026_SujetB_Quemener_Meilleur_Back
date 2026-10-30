@@ -5,7 +5,8 @@ class RegisterPayload(BaseModel):
     login: str = Field(min_length=3, max_length=50)
     # aligné sur UtilisateurCreate.mdp (max 50)
     mot_de_passe: str = Field(min_length=8, max_length=50)
-    is_admin: bool = False  # déclaratif pour l'instant, à sécuriser plus tard
+    # Pas de champ is_admin : l'inscription publique crée toujours un compte non-admin.
+    # Un administrateur est créé par un autre administrateur (POST /utilisateurs/).
 
 
 class LoginPayload(BaseModel):
