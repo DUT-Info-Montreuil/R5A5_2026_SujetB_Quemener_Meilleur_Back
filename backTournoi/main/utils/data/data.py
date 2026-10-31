@@ -19,7 +19,7 @@ jeux = [
 ]
 
 utilisateurs = [
-    {"id": 1, "login": "alex", "isAdmin": True},
+    {"id": 1, "login": "alex", "mdp": "testtest", "isAdmin": True},
     {"id": 2, "login": "max"},
     {"id": 3, "login": "lina"},
     {"id": 4, "login": "tom"},
@@ -34,6 +34,7 @@ utilisateurs = [
     {"id": 13, "login": "jade"},
     {"id": 14, "login": "noah"},
     {"id": 15, "login": "zoe"},
+    {"id": 67, "login": "Michel","mdp": "testtest", "is_admin": True},
     {"id": 16, "login": "yanis"},
 ]
 
@@ -98,50 +99,65 @@ tournois = [
         "id": 1,
         "nom": "Summer Cup 2026",
         "description": "Tournoi fictif de League of Legends",
-        "date_debut": "2026-09-20",
-        "date_fin": "2026-09-21",
+        "statut": "FERME",  # inscriptions closes : passer en EN_COURS génère l'arbre
         "jeu_id": 1,
+        "petite_finale": True,
         "equipes_ids": [1, 2, 3, 4],
     },
     {
         "id": 2,
         "nom": "Autumn Cup 2026",
         "description": "Tournoi fictif de Valorant",
-        "date_debut": "2026-10-10",
-        "date_fin": "2026-10-11",
+        "statut": "TERMINE",
         "jeu_id": 2,
+        "petite_finale": True,
         "equipes_ids": [5, 6, 7, 8],
     },
 ]
 
-# equipe1_id correspond toujours à score_equipe1
-# equipe2_id correspond toujours à score_equipe2
-matchs = [
-    # Summer Cup
-    {"id": 1, "date": "2026-09-20T10:00:00", "equipe1_id": 1, "equipe2_id": 2, "score_equipe1": 3, "score_equipe2": 1},
-    {"id": 2, "date": "2026-09-20T11:00:00", "equipe1_id": 3, "equipe2_id": 4, "score_equipe1": 2, "score_equipe2": 2},
-    {"id": 3, "date": "2026-09-20T14:00:00", "equipe1_id": 1, "equipe2_id": 3, "score_equipe1": 1, "score_equipe2": 2},
-    {"id": 4, "date": "2026-09-20T15:00:00", "equipe1_id": 2, "equipe2_id": 4, "score_equipe1": 4, "score_equipe2": 0},
-    {"id": 5, "date": "2026-09-21T10:00:00", "equipe1_id": 1, "equipe2_id": 4, "score_equipe1": 2, "score_equipe2": 1},
-    {"id": 6, "date": "2026-09-21T11:00:00", "equipe1_id": 2, "equipe2_id": 3, "score_equipe1": 0, "score_equipe2": 3},
+# Matchs = noeuds de l'arbre d'élimination directe.
+#  - round / position : place dans l'arbre (round 1 = premier tour)
+#  - equipe1_id / equipe2_id : None tant que l'équipe n'est pas connue
+#  - score_* : None tant que le match n'est pas joué (score = manches gagnées)
+#  - next_match_id / next_slot : où avance le vainqueur
+#  - loser_next_* : où va le perdant (petite finale), sinon None
+#  - bye : match à une seule équipe, qualifiée d'office
+# Summer Cup (tournoi 1) n'a aucun match : l'arbre est généré au passage EN_COURS.
+def _m(id, rnd, pos, e1, e2, s1, s2, win, nxt, slot, lnxt=None, lslot=None, petite=False):
+    return {
+        "id": id, "tournoi_id": 2, "round": rnd, "position": pos,
+        "equipe1_id": e1, "equipe2_id": e2,
+        "score_equipe1": s1, "score_equipe2": s2, "vainqueur_id": win,
+        "next_match_id": nxt, "next_slot": slot,
+        "loser_next_match_id": lnxt, "loser_next_slot": lslot,
+        "petite_finale": petite, "bye": False,
+    }
 
-    # Autumn Cup
-    {"id": 7, "date": "2026-10-10T10:00:00", "equipe1_id": 5, "equipe2_id": 6, "score_equipe1": 5, "score_equipe2": 2},
-    {"id": 8, "date": "2026-10-10T11:00:00", "equipe1_id": 7, "equipe2_id": 8, "score_equipe1": 1, "score_equipe2": 3},
-    {"id": 9, "date": "2026-10-10T14:00:00", "equipe1_id": 5, "equipe2_id": 7, "score_equipe1": 2, "score_equipe2": 2},
-    {"id": 10, "date": "2026-10-10T15:00:00", "equipe1_id": 6, "equipe2_id": 8, "score_equipe1": 3, "score_equipe2": 1},
-    {"id": 11, "date": "2026-10-11T10:00:00", "equipe1_id": 5, "equipe2_id": 8, "score_equipe1": 0, "score_equipe2": 1},
-    {"id": 12, "date": "2026-10-11T11:00:00", "equipe1_id": 6, "equipe2_id": 7, "score_equipe1": 4, "score_equipe2": 2},
+
+matchs = [
+    # Autumn Cup : demi-finales, finale, petite finale
+    _m(1, 1, 0, 5, 8, 2, 1, 5, 3, 1, 4, 1),
+    _m(2, 1, 1, 6, 7, 2, 0, 6, 3, 2, 4, 2),
+    _m(3, 2, 0, 5, 6, 3, 1, 5, None, None),
+    _m(4, 2, 1, 8, 7, 2, 0, 8, None, None, petite=True),
 ]
 
 messages = [
-    {"id": 1, "message": "Bienvenue dans l'équipe !", "date": "2026-09-19T18:00:00", "utilisateur_id": 1, "equipe_id": 1},
-    {"id": 2, "message": "Bon tournoi à tous !", "date": "2026-09-19T18:05:00", "utilisateur_id": 5, "equipe_id": 2},
-    {"id": 3, "message": "On est prêts !", "date": "2026-09-19T18:10:00", "utilisateur_id": 9, "equipe_id": 3},
-    {"id": 4, "message": "Rendez-vous demain matin.", "date": "2026-09-19T18:15:00", "utilisateur_id": 13, "equipe_id": 4},
-    {"id": 5, "message": "Bienvenue pour le deuxième tournoi !", "date": "2026-10-09T18:00:00", "utilisateur_id": 1, "equipe_id": 5},
+    {"id": 1, "message": "Bienvenue dans l'équipe !", "utilisateur_id": 1, "equipe_id": 1},
+    {"id": 2, "message": "Bon tournoi à tous !", "utilisateur_id": 5, "equipe_id": 2},
+    {"id": 3, "message": "On est prêts !", "utilisateur_id": 9, "equipe_id": 3},
+    {"id": 4, "message": "Rendez-vous demain matin.", "utilisateur_id": 13, "equipe_id": 4},
+    {"id": 5, "message": "Bienvenue pour le deuxième tournoi !", "utilisateur_id": 1, "equipe_id": 5},
 ]
 
+demandes = [
+    {"id": 1, "equipe_id": 2, "utilisateur_id": 2, "statut": "EN_ATTENTE"},
+    {"id": 2, "equipe_id": 4, "utilisateur_id": 3, "statut": "EN_ATTENTE"},
+    {"id": 3, "equipe_id": 3, "utilisateur_id": 4, "statut": "REFUSEE"},
+]
+
+def get_demande(demande_id: int):
+    return next((d for d in demandes if d["id"] == demande_id), None)
 
 def get_equipe(equipe_id: int):
     return next((e for e in equipes if e["id"] == equipe_id), None)
@@ -157,3 +173,7 @@ def get_tournoi(tournoi_id: int):
 
 def get_jeu(jeu_id: int):
     return next((j for j in jeux if j["id"] == jeu_id), None)
+
+
+def get_match(match_id: int):
+    return next((m for m in matchs if m["id"] == match_id), None)
