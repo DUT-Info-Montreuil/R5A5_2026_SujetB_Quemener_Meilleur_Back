@@ -116,4 +116,4 @@ CREATE INDEX IF NOT EXISTS idx_demandes_utilisateur ON demandes(utilisateur_id);
 CREATE INDEX IF NOT EXISTS idx_matchs_equipe1       ON matchs(equipe1_id);
 CREATE INDEX IF NOT EXISTS idx_matchs_equipe2       ON matchs(equipe2_id);
 
-INSERT INTO utilisateurs (login,mdp,is_admin) values ('admin','admindefou', TRUE);
+INSERT OR IGNORE INTO utilisateurs (login,mdp,is_admin) values ('admin','admindefou', 1);
