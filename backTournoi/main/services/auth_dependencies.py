@@ -2,7 +2,7 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from backTournoi.main.services.auth_service import AuthService
-from backTournoi.main.utils.data.data import get_utilisateur
+from backTournoi.main.services.utilisateur_service import UtilisateurService
 
 _bearer = HTTPBearer(auto_error=False)
 
@@ -19,7 +19,7 @@ def _utilisateur_depuis_jeton(
     if user_id is None:
         return None
 
-    return get_utilisateur(user_id) or None
+    return UtilisateurService.obtenir_utilisateur(user_id) or None
 
 
 def get_optional_user(

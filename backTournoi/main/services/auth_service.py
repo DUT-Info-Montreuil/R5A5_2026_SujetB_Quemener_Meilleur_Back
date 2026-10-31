@@ -1,7 +1,8 @@
 import hmac
 from typing import Optional
 
-from backTournoi.main.utils.data.data import utilisateurs
+from backTournoi.main.repo.utilisateur_repository import UtilisateurRepository
+from backTournoi.main.utils.data.transaction import transaction
 from backTournoi.main.utils.security import (
     DUMMY_HASH,
     create_token,
@@ -30,7 +31,8 @@ class AuthService:
 
     @staticmethod
     def authenticate(login: str, mot_de_passe: str) -> Optional[dict]:
-        user = next((u for u in utilisateurs if u["login"] == login.strip()), None)
+        with transaction() as conn:
+            user = UtilisateurRepository.obtenir_par_login(conn, login.strip())
         if user is None:
             verify_password(mot_de_passe, DUMMY_HASH)  # temps de réponse constant
             return None
@@ -39,11 +41,13 @@ class AuthService:
         if is_hashed(stored):
             ok = verify_password(mot_de_passe, stored)
         else:
-            # Utilisateur de départ (data.py) encore en clair : on compare,
-            # puis on remplace par un hash dès la première connexion réussie.
+            # Utilisateur de départ encore en clair : on compare, puis on remplace
+            # par un hash dès la première connexion réussie.
             ok = hmac.compare_digest(stored.encode(), mot_de_passe.encode())
             if ok:
                 user["mdp"] = hash_password(mot_de_passe)
+                with transaction() as conn:
+                    UtilisateurRepository.modifier(conn, user["id"], {"mdp": user["mdp"]})
 
         return user if ok else None
 

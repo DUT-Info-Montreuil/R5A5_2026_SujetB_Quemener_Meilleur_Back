@@ -1,8 +1,13 @@
 import uvicorn
 from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from contextlib import asynccontextmanager
 from dotenv import load_dotenv
+
+
 load_dotenv()
+
+from backTournoi.main.utils.data.database import init_db
 
 from backTournoi.main.services.auth_dependencies import get_current_user
 from controllers.auth_controller import router as auth_router
@@ -13,10 +18,17 @@ from controllers.utilisateur_controller import router as utilisateur_router
 from controllers.message_controller import router as message_router
 from controllers.demande_controller import router as demande_router
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Au démarrage : crée le fichier .db et les tables s'ils n'existent pas."""
+    init_db()
+    yield
+
 app = FastAPI(
-    title="Bouchon API",
+    title="App API",
     description="API préparée pour une intégration future avec une base de données.",
     version="1.0.0",
+    lifespan=lifespan,
 )
 
 app.add_middleware(

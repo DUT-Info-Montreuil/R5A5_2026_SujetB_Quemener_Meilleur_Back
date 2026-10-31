@@ -7,6 +7,12 @@
 /dataSources/
 /dataSources.local.xml
 
+# Base de données SQLite
+*.db
+*.db-wal
+*.db-shm
+*.db-journal
+
 /.idea
 
 .env

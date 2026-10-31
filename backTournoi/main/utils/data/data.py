@@ -19,7 +19,7 @@ jeux = [
 ]
 
 utilisateurs = [
-    {"id": 1, "login": "alex", "isAdmin": True},
+    {"id": 1, "login": "alex", "mdp": "testtest", "isAdmin": True},
     {"id": 2, "login": "max"},
     {"id": 3, "login": "lina"},
     {"id": 4, "login": "tom"},
@@ -34,6 +34,7 @@ utilisateurs = [
     {"id": 13, "login": "jade"},
     {"id": 14, "login": "noah"},
     {"id": 15, "login": "zoe"},
+    {"id": 67, "login": "Michel","mdp": "testtest", "is_admin": True},
     {"id": 16, "login": "yanis"},
 ]
 

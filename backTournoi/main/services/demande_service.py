@@ -1,13 +1,12 @@
+import sqlite3
 from typing import List, Optional
 
-# ⚠️ À ADAPTER : chemin du module qui contient tes données fictives
-from backTournoi.main.utils.data.data import (
-    demandes,
-    get_demande,
-    get_equipe,
-    get_tournoi,
-    get_utilisateur,
-)
+from backTournoi.main.repo.demande_repository import DemandeRepository
+from backTournoi.main.repo.equipe_repository import EquipeRepository
+from backTournoi.main.repo.tournoi_repository import TournoiRepository
+from backTournoi.main.repo.utilisateur_repository import UtilisateurRepository
+from backTournoi.main.utils.data.erreurs_sql import erreur_metier
+from backTournoi.main.utils.data.transaction import transaction
 from backTournoi.main.dto.demande_dto import DemandeCreate
 
 
@@ -15,57 +14,46 @@ class DemandeService:
     @staticmethod
     def lister_demandes(equipe_id: Optional[int] = None) -> List[dict]:
         """Liste les demandes, éventuellement filtrées par équipe."""
-        if equipe_id is None:
-            return demandes
-        return [d for d in demandes if d["equipe_id"] == equipe_id]
+        with transaction() as conn:
+            return DemandeRepository.lister(conn, equipe_id)
 
     @staticmethod
     def creer_demande(payload: DemandeCreate) -> dict:
         """Crée une demande d'adhésion (statut EN_ATTENTE), à valider par le capitaine."""
-        equipe = get_equipe(payload.equipe_id)
-        if not equipe:
-            raise ValueError("Equipe introuvable")
+        with transaction() as conn:
+            equipe = EquipeRepository.obtenir(conn, payload.equipe_id)
+            if not equipe:
+                raise ValueError("Equipe introuvable")
 
-        if not get_utilisateur(payload.utilisateur_id):
-            raise ValueError("Utilisateur introuvable")
+            if not UtilisateurRepository.obtenir(conn, payload.utilisateur_id):
+                raise ValueError("Utilisateur introuvable")
 
-        if payload.utilisateur_id in equipe["joueurs_ids"]:
-            raise ValueError("Vous faites déjà partie de cette équipe")
+            if payload.utilisateur_id in equipe["joueurs_ids"]:
+                raise ValueError("Vous faites déjà partie de cette équipe")
 
-        tournoi = get_tournoi(equipe["tournoi_id"])
-        if tournoi and tournoi["statut"] != "OUVERT":
-            raise ValueError("Les inscriptions de ce tournoi sont closes")
+            tournoi = TournoiRepository.obtenir(conn, equipe["tournoi_id"])
+            if tournoi and tournoi["statut"] != "OUVERT":
+                raise ValueError("Les inscriptions de ce tournoi sont closes")
 
-        deja_en_attente = any(
-            d["equipe_id"] == payload.equipe_id
-            and d["utilisateur_id"] == payload.utilisateur_id
-            and d["statut"] == "EN_ATTENTE"
-            for d in demandes
-        )
-        if deja_en_attente:
-            raise ValueError("Une demande est déjà en attente pour cette équipe")
+            if DemandeRepository.existe_en_attente(conn, payload.equipe_id, payload.utilisateur_id):
+                raise ValueError("Une demande est déjà en attente pour cette équipe")
 
-        demande = {
-            "id": max((d["id"] for d in demandes), default=0) + 1,
-            "equipe_id": payload.equipe_id,
-            "utilisateur_id": payload.utilisateur_id,
-            "statut": "EN_ATTENTE",
-        }
-        demandes.append(demande)
-        return demande
+            return DemandeRepository.creer(
+                conn, payload.equipe_id, payload.utilisateur_id, "EN_ATTENTE"
+            )
 
-    def _demande_a_traiter(demande_id: int, capitaine_id: int) -> tuple:
+    def _demande_a_traiter(demande_id: int, capitaine_id: int, conn) -> tuple:
         """Retourne (demande, equipe) si la demande existe, est en attente et que l'appelant est le capitaine."""
-        demande = get_demande(demande_id)
+        demande = DemandeRepository.obtenir(conn, demande_id)
         if not demande:
             raise LookupError("Demande introuvable")
 
-        equipe = get_equipe(demande["equipe_id"])
+        equipe = EquipeRepository.obtenir(conn, demande["equipe_id"])
         if not equipe:
             raise LookupError("Equipe introuvable")
 
-        # Le capitaine est le premier joueur de l'équipe
-        if not equipe["joueurs_ids"] or equipe["joueurs_ids"][0] != capitaine_id:
+        # Le capitaine est celui enregistré dans l'équipe (equipes.capitaine_id)
+        if equipe["capitaine_id"] != capitaine_id:
             raise PermissionError("Seul le capitaine peut traiter les demandes")
 
         if demande["statut"] != "EN_ATTENTE":
@@ -76,24 +64,27 @@ class DemandeService:
     @staticmethod
     def accepter_demande(demande_id: int, capitaine_id: int) -> dict:
         """Accepte une demande : le joueur est ajouté à l'équipe."""
-        demande, equipe = DemandeService._demande_a_traiter(demande_id, capitaine_id)
+        try:
+            with transaction() as conn:
+                demande, equipe = DemandeService._demande_a_traiter(demande_id, capitaine_id, conn)
 
-        tournoi = get_tournoi(equipe["tournoi_id"])
-        if tournoi and tournoi["statut"] != "OUVERT":
-            raise ValueError("Les inscriptions de ce tournoi sont closes")
+                tournoi = TournoiRepository.obtenir(conn, equipe["tournoi_id"])
+                if tournoi and tournoi["statut"] != "OUVERT":
+                    raise ValueError("Les inscriptions de ce tournoi sont closes")
 
-        if demande["utilisateur_id"] not in equipe["joueurs_ids"]:
-            equipe["joueurs_ids"].append(demande["utilisateur_id"])
+                if demande["utilisateur_id"] not in equipe["joueurs_ids"]:
+                    EquipeRepository.ajouter_membre(
+                        conn, equipe["id"], demande["utilisateur_id"], equipe["tournoi_id"]
+                    )
 
-        demande["statut"] = "ACCEPTEE"
-        return demande
+                return DemandeRepository.changer_statut(conn, demande_id, "ACCEPTEE")
+        except sqlite3.IntegrityError as e:
+            # ex. le joueur est déjà dans une autre équipe de ce tournoi
+            raise erreur_metier(e) from e
 
     @staticmethod
     def refuser_demande(demande_id: int, capitaine_id: int) -> dict:
         """Refuse une demande."""
-        demande, _ = DemandeService._demande_a_traiter(demande_id, capitaine_id)
-        demande["statut"] = "REFUSEE"
-        return demande
-
-
-
+        with transaction() as conn:
+            DemandeService._demande_a_traiter(demande_id, capitaine_id, conn)
+            return DemandeRepository.changer_statut(conn, demande_id, "REFUSEE")

@@ -4,13 +4,12 @@ import pytest
 from fastapi import HTTPException
 from pydantic import ValidationError
 
-# Importation des données et fonctions d'accès depuis utils/data/data.py
-from backTournoi.main.utils.data.data import (
-    utilisateurs,
-    equipes,
-    messages,
-    get_utilisateur,
-)
+# Lecture directe de la base de test via les repositories (indépendante des services testés)
+from backTournoi.main.utils.data.transaction import transaction
+from backTournoi.main.repo.equipe_repository import EquipeRepository
+from backTournoi.main.repo.message_repository import MessageRepository
+from backTournoi.main.repo.utilisateur_repository import UtilisateurRepository
+from backTournoi.main.utils.security import verify_password
 from backTournoi.main.controllers.utilisateur_controller import (
     get_utilisateurs,
     post_utilisateur,
@@ -25,14 +24,27 @@ from backTournoi.main.dto.utilisateur_dto import (
 )
 
 
-@pytest.fixture(autouse=True)
-def reinitialiser_donnees():
-    """Sauvegarde la liste des utilisateurs avant chaque test et la restaure après,
-    pour que les tests de création / modification n'influencent pas les autres
-    (le PATCH modifie le dictionnaire de l'utilisateur en place)."""
-    sauvegarde_utilisateurs = copy.deepcopy(utilisateurs)
-    yield
-    utilisateurs[:] = sauvegarde_utilisateurs
+# L'isolation des tests est assurée par la fixture autouse `base_de_test` (conftest.py) :
+# chaque test travaille sur une base SQLite temporaire neuve.
+
+def utilisateurs():
+    with transaction() as conn:
+        return UtilisateurRepository.lister(conn)
+
+
+def equipes():
+    with transaction() as conn:
+        return EquipeRepository.lister(conn)
+
+
+def messages():
+    with transaction() as conn:
+        return MessageRepository.lister(conn)
+
+
+def get_utilisateur(utilisateur_id):
+    with transaction() as conn:
+        return UtilisateurRepository.obtenir(conn, utilisateur_id)
 
 
 def payload_valide(**kwargs):
@@ -50,7 +62,7 @@ def test_lister_utilisateurs():
     """Vérifie que le service renvoie la liste des utilisateurs, avec ID et logins uniques."""
     resultat = UtilisateurService.lister_utilisateurs()
     assert len(resultat) > 0
-    assert resultat is utilisateurs
+    assert resultat == utilisateurs()
     ids = [u["id"] for u in resultat]
     logins = [u["login"] for u in resultat]
     assert len(ids) == len(set(ids))
@@ -59,7 +71,7 @@ def test_lister_utilisateurs():
 
 def test_obtenir_utilisateur():
     """Vérifie qu'un utilisateur existant est renvoyé par son ID, sans enrichissement."""
-    attendu = utilisateurs[0]
+    attendu = utilisateurs()[0]
     utilisateur = UtilisateurService.obtenir_utilisateur(attendu["id"])
     assert utilisateur == attendu
     assert "equipes" not in utilisateur
@@ -77,12 +89,12 @@ def test_obtenir_utilisateur_inexistant():
 
 def test_obtenir_utilisateur_detail():
     """Vérifie que le détail contient ses équipes et ses messages, et seulement eux."""
-    utilisateur_id = utilisateurs[0]["id"]
+    utilisateur_id = utilisateurs()[0]["id"]
     detail = UtilisateurService.obtenir_utilisateur_detail(utilisateur_id)
 
     assert detail["id"] == utilisateur_id
-    assert detail["equipes"] == [e for e in equipes if utilisateur_id in e["joueurs_ids"]]
-    assert detail["messages"] == [m for m in messages if m["utilisateur_id"] == utilisateur_id]
+    assert detail["equipes"] == [e for e in equipes() if utilisateur_id in e["joueurs_ids"]]
+    assert detail["messages"] == [m for m in messages() if m["utilisateur_id"] == utilisateur_id]
     # L'enrichissement ne doit pas modifier l'utilisateur stocké
     assert "equipes" not in get_utilisateur(utilisateur_id)
 
@@ -106,8 +118,8 @@ def test_obtenir_utilisateur_detail_inexistant():
 
 def test_creer_utilisateur():
     """Vérifie la création : champs, ID, ajout à la liste et non-admin par défaut."""
-    nouvel_id = max(u["id"] for u in utilisateurs) + 1
-    avant = len(utilisateurs)
+    nouvel_id = max(u["id"] for u in utilisateurs()) + 1
+    avant = len(utilisateurs())
 
     utilisateur = UtilisateurService.creer_utilisateur(
         UtilisateurCreate(login="nouveau_joueur", mdp="secret123")
@@ -115,20 +127,21 @@ def test_creer_utilisateur():
 
     assert utilisateur["id"] == nouvel_id
     assert utilisateur["login"] == "nouveau_joueur"
-    assert utilisateur["mdp"] == "secret123"
+    assert utilisateur["mdp"] != "secret123"  # stocké haché
+    assert verify_password("secret123", utilisateur["mdp"])
     assert utilisateur["is_admin"] is False
-    assert len(utilisateurs) == avant + 1
+    assert len(utilisateurs()) == avant + 1
     assert get_utilisateur(nouvel_id) == utilisateur
 
 
 def test_creer_utilisateur_login_deja_pris():
     """Vérifie qu'un login déjà utilisé est refusé et sans effet."""
-    avant = len(utilisateurs)
+    avant = len(utilisateurs())
     with pytest.raises(ValueError, match="existe déjà"):
         UtilisateurService.creer_utilisateur(
-            payload_valide(login=utilisateurs[0]["login"])
+            payload_valide(login=utilisateurs()[0]["login"])
         )
-    assert len(utilisateurs) == avant
+    assert len(utilisateurs()) == avant
 
 
 @pytest.mark.parametrize("champ, valeur", [
@@ -157,20 +170,21 @@ def test_utilisateur_out_sans_mdp():
 
 def test_modifier_utilisateur():
     """Vérifie la modification de plusieurs champs, bien enregistrée dans les données."""
-    utilisateur_id = utilisateurs[0]["id"]
+    utilisateur_id = utilisateurs()[0]["id"]
     payload = UtilisateurUpdate(login="Renommé", mdp="nouveau_mdp", is_admin=True)
 
     utilisateur = UtilisateurService.modifier_utilisateur(utilisateur_id, payload)
 
     assert utilisateur["login"] == "Renommé"
-    assert utilisateur["mdp"] == "nouveau_mdp"
+    assert utilisateur["mdp"] != "nouveau_mdp"  # stocké haché
+    assert verify_password("nouveau_mdp", utilisateur["mdp"])
     assert utilisateur["is_admin"] is True
     assert get_utilisateur(utilisateur_id) == utilisateur
 
 
 def test_modifier_utilisateur_ne_touche_pas_les_autres_champs():
     """Vérifie que les champs non fournis restent inchangés."""
-    avant = copy.deepcopy(utilisateurs[0])
+    avant = copy.deepcopy(utilisateurs()[0])
     UtilisateurService.modifier_utilisateur(
         avant["id"], UtilisateurUpdate(login="Renommé")
     )
@@ -190,20 +204,20 @@ def test_modifier_utilisateur_inexistant():
 
 def test_modifier_utilisateur_login_deja_pris():
     """Vérifie qu'on ne peut pas prendre le login d'un autre, et que rien n'est modifié."""
-    avant = copy.deepcopy(utilisateurs[0])
+    avant = copy.deepcopy(utilisateurs()[0])
     with pytest.raises(ValueError, match="existe déjà"):
         UtilisateurService.modifier_utilisateur(
             avant["id"],
-            UtilisateurUpdate(mdp="autre_mdp", login=utilisateurs[1]["login"]),
+            UtilisateurUpdate(mdp="autre_mdp", login=utilisateurs()[1]["login"]),
         )
     assert get_utilisateur(avant["id"]) == avant
 
 
 def test_modifier_utilisateur_meme_login_tolere():
     """Vérifie que renvoyer son propre login n'est pas une erreur."""
-    login = utilisateurs[0]["login"]
+    login = utilisateurs()[0]["login"]
     utilisateur = UtilisateurService.modifier_utilisateur(
-        utilisateurs[0]["id"], UtilisateurUpdate(login=login)
+        utilisateurs()[0]["id"], UtilisateurUpdate(login=login)
     )
     assert utilisateur["login"] == login
 
@@ -213,7 +227,7 @@ def test_modifier_utilisateur_champ_null(champ):
     """Vérifie qu'on ne peut mettre à null ni le login, ni le mdp, ni is_admin."""
     with pytest.raises(ValueError, match=champ):
         UtilisateurService.modifier_utilisateur(
-            utilisateurs[0]["id"], UtilisateurUpdate(**{champ: None})
+            utilisateurs()[0]["id"], UtilisateurUpdate(**{champ: None})
         )
 
 
@@ -228,23 +242,23 @@ def test_controller_get_utilisateurs():
 
 def test_controller_post_utilisateur():
     """Vérifie que le contrôleur crée un utilisateur via le service."""
-    avant = len(utilisateurs)
+    avant = len(utilisateurs())
     utilisateur = post_utilisateur(payload_valide())
     assert utilisateur["login"] == "nouveau_joueur"
-    assert len(utilisateurs) == avant + 1
+    assert len(utilisateurs()) == avant + 1
 
 
 def test_controller_post_utilisateur_login_deja_pris():
     """Vérifie que le contrôleur transforme l'erreur du service en 400."""
     with pytest.raises(HTTPException) as erreur:
-        post_utilisateur(payload_valide(login=utilisateurs[0]["login"]))
+        post_utilisateur(payload_valide(login=utilisateurs()[0]["login"]))
     assert erreur.value.status_code == 400
     assert "existe déjà" in erreur.value.detail
 
 
 def test_controller_get_utilisateur_detail():
     """Vérifie que le contrôleur renvoie le détail enrichi de l'utilisateur."""
-    utilisateur_id = utilisateurs[0]["id"]
+    utilisateur_id = utilisateurs()[0]["id"]
     detail = get_utilisateur_detail(utilisateur_id)
     assert detail == UtilisateurService.obtenir_utilisateur_detail(utilisateur_id)
 
@@ -259,8 +273,10 @@ def test_controller_get_utilisateur_detail_inexistant():
 
 def test_controller_patch_utilisateur():
     """Vérifie que le contrôleur modifie un utilisateur via le service."""
-    utilisateur_id = utilisateurs[0]["id"]
-    utilisateur = patch_utilisateur(utilisateur_id, UtilisateurUpdate(login="Renommé"))
+    utilisateur_id = utilisateurs()[0]["id"]
+    utilisateur = patch_utilisateur(
+        utilisateur_id, UtilisateurUpdate(login="Renommé"), current_user=get_utilisateur(utilisateur_id)
+    )
     assert utilisateur["login"] == "Renommé"
     assert get_utilisateur(utilisateur_id)["login"] == "Renommé"
 
@@ -268,7 +284,7 @@ def test_controller_patch_utilisateur():
 def test_controller_patch_utilisateur_inexistant():
     """Vérifie qu'un ID d'utilisateur inconnu renvoie une 404."""
     with pytest.raises(HTTPException) as erreur:
-        patch_utilisateur(999, UtilisateurUpdate(login="Fantôme"))
+        patch_utilisateur(999, UtilisateurUpdate(login="Fantôme"), current_user={"id": 999})
     assert erreur.value.status_code == 404
     assert erreur.value.detail == "Utilisateur introuvable"
 
@@ -277,7 +293,9 @@ def test_controller_patch_utilisateur_login_deja_pris():
     """Vérifie que le contrôleur transforme le login en doublon en 400."""
     with pytest.raises(HTTPException) as erreur:
         patch_utilisateur(
-            utilisateurs[0]["id"], UtilisateurUpdate(login=utilisateurs[1]["login"])
+            utilisateurs()[0]["id"],
+            UtilisateurUpdate(login=utilisateurs()[1]["login"]),
+            current_user=utilisateurs()[0],
         )
     assert erreur.value.status_code == 400
     assert "existe déjà" in erreur.value.detail

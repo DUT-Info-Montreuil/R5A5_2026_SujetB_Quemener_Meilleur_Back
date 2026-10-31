@@ -30,7 +30,7 @@ class EquipeOut(BaseModel):
 class JoueurOut(BaseModel):
     id: int
     login: str
-    isAdmin: Optional[bool] = False
+    is_admin: Optional[bool] = False
 
 
 class MessageOut(BaseModel):

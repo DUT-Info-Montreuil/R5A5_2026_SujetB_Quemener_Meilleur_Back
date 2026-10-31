@@ -1,11 +1,11 @@
+import sqlite3
 from typing import List, Optional
 
-from backTournoi.main.utils.data.data import (
-    utilisateurs,
-    equipes,
-    messages,
-    get_utilisateur,
-)
+from backTournoi.main.repo.equipe_repository import EquipeRepository
+from backTournoi.main.repo.message_repository import MessageRepository
+from backTournoi.main.repo.utilisateur_repository import UtilisateurRepository
+from backTournoi.main.utils.data.erreurs_sql import erreur_metier
+from backTournoi.main.utils.data.transaction import transaction
 from backTournoi.main.utils.security import hash_password
 from backTournoi.main.dto.utilisateur_dto import UtilisateurCreate, UtilisateurUpdate
 
@@ -19,26 +19,25 @@ class UtilisateurService:
     @staticmethod
     def lister_utilisateurs() -> List[dict]:
         """Retourne la liste brute de tous les utilisateurs."""
-        return utilisateurs
+        with transaction() as conn:
+            return UtilisateurRepository.lister(conn)
 
     @staticmethod
     def obtenir_utilisateur(utilisateur_id: int) -> Optional[dict]:
         """Retourne un utilisateur par son ID, sans enrichissement."""
-        return get_utilisateur(utilisateur_id)
+        with transaction() as conn:
+            return UtilisateurRepository.obtenir(conn, utilisateur_id)
 
     @staticmethod
     def obtenir_utilisateur_detail(utilisateur_id: int) -> Optional[dict]:
         """Retourne un utilisateur enrichi avec ses équipes et ses messages."""
-        utilisateur = get_utilisateur(utilisateur_id)
-        if not utilisateur:
-            return None
+        with transaction() as conn:
+            utilisateur = UtilisateurRepository.obtenir(conn, utilisateur_id)
+            if not utilisateur:
+                return None
 
-        utilisateur_equipes = [
-            e for e in equipes if utilisateur_id in e["joueurs_ids"]
-        ]
-        utilisateur_messages = [
-            m for m in messages if m["utilisateur_id"] == utilisateur_id
-        ]
+            utilisateur_equipes = EquipeRepository.lister_par_utilisateur(conn, utilisateur_id)
+            utilisateur_messages = MessageRepository.lister_par_utilisateur(conn, utilisateur_id)
 
         return {
             **utilisateur,
@@ -50,20 +49,17 @@ class UtilisateurService:
     def creer_utilisateur(payload: UtilisateurCreate) -> dict:
         """Crée un nouvel utilisateur. Le login doit être unique.
         Le mot de passe est stocké haché (bcrypt)."""
-        if any(u["login"] == payload.login for u in utilisateurs):
-            raise ValueError(f"Le login '{payload.login}' existe déjà.")
+        mdp_hache = hash_password(payload.mdp)
+        try:
+            with transaction() as conn:
+                if UtilisateurRepository.obtenir_par_login(conn, payload.login):
+                    raise ValueError(f"Le login '{payload.login}' existe déjà.")
 
-        nouvel_id = max((u["id"] for u in utilisateurs), default=0) + 1
-
-        nouvel_utilisateur = {
-            "id": nouvel_id,
-            "login": payload.login,
-            "mdp": hash_password(payload.mdp),
-            "is_admin": payload.is_admin,
-        }
-
-        utilisateurs.append(nouvel_utilisateur)
-        return nouvel_utilisateur
+                return UtilisateurRepository.creer(
+                    conn, payload.login, mdp_hache, payload.is_admin
+                )
+        except sqlite3.IntegrityError as e:
+            raise erreur_metier(e) from e
 
     @staticmethod
     def modifier_utilisateur(
@@ -71,25 +67,27 @@ class UtilisateurService:
     ) -> Optional[dict]:
         """Modifie les champs fournis d'un utilisateur (PATCH).
         Renvoie None si l'utilisateur n'existe pas."""
-        utilisateur = get_utilisateur(utilisateur_id)
-        if not utilisateur:
-            return None
+        try:
+            with transaction() as conn:
+                utilisateur = UtilisateurRepository.obtenir(conn, utilisateur_id)
+                if not utilisateur:
+                    return None
 
-        modifications = payload.model_dump(exclude_unset=True)
+                modifications = payload.model_dump(exclude_unset=True)
 
-        # Toutes les vérifications se font avant la moindre modification
-        for champ in CHAMPS_NON_NULLABLES:
-            if champ in modifications and modifications[champ] is None:
-                raise ValueError(f"Le champ '{champ}' ne peut pas être null.")
+                # Toutes les vérifications se font avant la moindre modification
+                for champ in CHAMPS_NON_NULLABLES:
+                    if champ in modifications and modifications[champ] is None:
+                        raise ValueError(f"Le champ '{champ}' ne peut pas être null.")
 
-        if "login" in modifications and any(
-            u["login"] == modifications["login"] and u["id"] != utilisateur_id
-            for u in utilisateurs
-        ):
-            raise ValueError(f"Le login '{modifications['login']}' existe déjà.")
+                if "login" in modifications:
+                    autre = UtilisateurRepository.obtenir_par_login(conn, modifications["login"])
+                    if autre and autre["id"] != utilisateur_id:
+                        raise ValueError(f"Le login '{modifications['login']}' existe déjà.")
 
-        if "mdp" in modifications:
-            modifications["mdp"] = hash_password(modifications["mdp"])
+                if "mdp" in modifications:
+                    modifications["mdp"] = hash_password(modifications["mdp"])
 
-        utilisateur.update(modifications)
-        return utilisateur
+                return UtilisateurRepository.modifier(conn, utilisateur_id, modifications)
+        except sqlite3.IntegrityError as e:
+            raise erreur_metier(e) from e

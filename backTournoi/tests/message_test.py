@@ -1,17 +1,12 @@
-import copy
-
 import pytest
 from fastapi import HTTPException
 from pydantic import ValidationError
 
-# Importation des données et fonctions d'accès depuis utils/data/data.py
-from backTournoi.main.utils.data.data import (
-    messages,
-    equipes,
-    tournois,
-    get_equipe,
-    get_utilisateur,
-)
+# Lecture directe de la base de test via les repositories (indépendante des services testés)
+from backTournoi.main.utils.data.transaction import transaction
+from backTournoi.main.repo.equipe_repository import EquipeRepository
+from backTournoi.main.repo.message_repository import MessageRepository
+from backTournoi.main.repo.utilisateur_repository import UtilisateurRepository
 from backTournoi.main.controllers.message_controller import (
     get_messages,
     post_message,
@@ -21,19 +16,33 @@ from backTournoi.main.services.message_service import MessageService
 from backTournoi.main.dto.message_dto import MessageCreate
 
 
-@pytest.fixture(autouse=True)
-def reinitialiser_donnees():
-    """Sauvegarde les messages avant chaque test et les restaure après,
-    pour que les tests de création n'influencent pas les autres."""
-    sauvegarde_messages = copy.deepcopy(messages)
-    yield
-    messages[:] = sauvegarde_messages
+# L'isolation des tests est assurée par la fixture autouse `base_de_test` (conftest.py) :
+# chaque test travaille sur une base SQLite temporaire neuve.
+
+def messages():
+    with transaction() as conn:
+        return MessageRepository.lister(conn)
+
+
+def equipes():
+    with transaction() as conn:
+        return EquipeRepository.lister(conn)
+
+
+def get_equipe(equipe_id):
+    with transaction() as conn:
+        return EquipeRepository.obtenir(conn, equipe_id)
+
+
+def get_utilisateur(utilisateur_id):
+    with transaction() as conn:
+        return UtilisateurRepository.obtenir(conn, utilisateur_id)
 
 
 def payload_valide(**kwargs):
     """Construit un MessageCreate valide (auteur membre de la première équipe),
     avec possibilité de surcharger des champs."""
-    equipe = equipes[0]
+    equipe = equipes()[0]
     donnees = dict(
         equipe_id=equipe["id"],
         utilisateur_id=equipe["joueurs_ids"][0],
@@ -46,7 +55,7 @@ def payload_valide(**kwargs):
 def utilisateur_hors_equipe(equipe):
     """Renvoie l'ID d'un utilisateur existant qui n'est pas membre de l'équipe,
     ou None si on n'en trouve pas dans les données factices."""
-    for autre in equipes:
+    for autre in equipes():
         for uid in autre["joueurs_ids"]:
             if uid not in equipe["joueurs_ids"] and get_utilisateur(uid) is not None:
                 return uid
@@ -61,7 +70,7 @@ def test_lister_messages_non_vide():
     """Vérifie que le service renvoie bien la liste des messages des données factices."""
     resultat = MessageService.lister_messages()
     assert len(resultat) > 0
-    assert resultat is messages
+    assert resultat == messages()
 
 
 def test_lister_messages_structure():
@@ -91,10 +100,10 @@ def test_lister_messages_auteurs_existants():
 
 def test_lister_messages_filtre_par_equipe():
     """Vérifie que le filtre ne renvoie que les messages de l'équipe demandée."""
-    equipe_id = messages[0]["equipe_id"]
+    equipe_id = messages()[0]["equipe_id"]
     resultat = MessageService.lister_messages(equipe_id)
 
-    attendus = [m for m in messages if m["equipe_id"] == equipe_id]
+    attendus = [m for m in messages() if m["equipe_id"] == equipe_id]
     assert resultat == attendus
     assert len(resultat) > 0
     for message in resultat:
@@ -112,7 +121,7 @@ def test_lister_messages_filtre_equipe_inconnue():
 
 def test_obtenir_message():
     """Vérifie qu'un message existant est renvoyé par son ID."""
-    attendu = messages[0]
+    attendu = messages()[0]
     message = MessageService.obtenir_message(attendu["id"])
     assert message == attendu
 
@@ -128,8 +137,8 @@ def test_obtenir_message_inexistant():
 
 def test_creer_message():
     """Vérifie la création d'un message avec tous les champs."""
-    nouvel_id = max(m["id"] for m in messages) + 1
-    equipe = equipes[0]
+    nouvel_id = max(m["id"] for m in messages()) + 1
+    equipe = equipes()[0]
 
     message = MessageService.creer_message(payload_valide())
 
@@ -141,15 +150,15 @@ def test_creer_message():
 
 def test_creer_message_ajoute_a_la_liste():
     """Vérifie que le message créé est bien ajouté à la liste des messages."""
-    avant = len(messages)
+    avant = len(messages())
     message = MessageService.creer_message(payload_valide())
-    assert len(messages) == avant + 1
+    assert len(messages()) == avant + 1
     assert MessageService.obtenir_message(message["id"]) == message
 
 
 def test_creer_message_visible_dans_son_equipe():
     """Vérifie que le message créé apparaît dans les messages de son équipe."""
-    equipe_id = equipes[0]["id"]
+    equipe_id = equipes()[0]["id"]
     message = MessageService.creer_message(payload_valide())
     assert message in MessageService.lister_messages(equipe_id)
 
@@ -163,31 +172,31 @@ def test_creer_message_ids_uniques():
 
 def test_creer_message_equipe_inexistante():
     """Vérifie qu'une équipe inconnue est refusée et sans effet."""
-    avant = len(messages)
+    avant = len(messages())
     with pytest.raises(ValueError, match="équipe"):
         MessageService.creer_message(payload_valide(equipe_id=999))
-    assert len(messages) == avant
+    assert len(messages()) == avant
 
 
 def test_creer_message_utilisateur_inexistant():
     """Vérifie qu'un auteur inconnu est refusé et sans effet."""
-    avant = len(messages)
+    avant = len(messages())
     with pytest.raises(ValueError, match="utilisateur"):
         MessageService.creer_message(payload_valide(utilisateur_id=999))
-    assert len(messages) == avant
+    assert len(messages()) == avant
 
 
 def test_creer_message_auteur_non_membre():
     """Vérifie qu'un utilisateur qui n'est pas dans l'équipe ne peut pas y écrire."""
-    equipe = equipes[0]
+    equipe = equipes()[0]
     intrus = utilisateur_hors_equipe(equipe)
     if intrus is None:
         pytest.skip("Aucun utilisateur extérieur à l'équipe dans les données factices")
 
-    avant = len(messages)
+    avant = len(messages())
     with pytest.raises(ValueError, match="membre"):
         MessageService.creer_message(payload_valide(utilisateur_id=intrus))
-    assert len(messages) == avant
+    assert len(messages()) == avant
 
 
 def test_creer_message_texte_vide():
@@ -243,13 +252,13 @@ def test_creer_message_champ_manquant():
 def test_controller_get_messages():
     """Vérifie que le contrôleur renvoie les messages fournis par le service."""
     resultat = get_messages()
-    assert len(resultat) == len(messages)
+    assert len(resultat) == len(messages())
     assert resultat == MessageService.lister_messages()
 
 
 def test_controller_get_messages_filtre_par_equipe():
     """Vérifie que le contrôleur filtre les messages par équipe."""
-    equipe_id = messages[0]["equipe_id"]
+    equipe_id = messages()[0]["equipe_id"]
     resultat = get_messages(equipe_id=equipe_id)
     assert resultat == MessageService.lister_messages(equipe_id)
     for message in resultat:
@@ -267,14 +276,14 @@ def test_controller_get_messages_equipe_inconnue():
 
 def test_controller_post_message():
     """Vérifie que le contrôleur crée un message via le service."""
-    avant = len(messages)
+    avant = len(messages())
 
     message = post_message(payload_valide())
 
     assert message["message"] == "Salut l'équipe !"
-    assert message["equipe_id"] == equipes[0]["id"]
+    assert message["equipe_id"] == equipes()[0]["id"]
     assert message in MessageService.lister_messages()
-    assert len(messages) == avant + 1
+    assert len(messages()) == avant + 1
 
 
 def test_controller_post_message_equipe_inexistante():
@@ -295,7 +304,7 @@ def test_controller_post_message_utilisateur_inexistant():
 
 def test_controller_post_message_auteur_non_membre():
     """Vérifie que le contrôleur renvoie une 400 pour un auteur hors de l'équipe."""
-    intrus = utilisateur_hors_equipe(equipes[0])
+    intrus = utilisateur_hors_equipe(equipes()[0])
     if intrus is None:
         pytest.skip("Aucun utilisateur extérieur à l'équipe dans les données factices")
 
@@ -311,7 +320,7 @@ def test_controller_post_message_auteur_non_membre():
 
 def test_controller_get_message_detail():
     """Vérifie que le contrôleur renvoie le message demandé."""
-    message_id = messages[0]["id"]
+    message_id = messages()[0]["id"]
     message = get_message_detail(message_id)
     assert message["id"] == message_id
     assert message == MessageService.obtenir_message(message_id)

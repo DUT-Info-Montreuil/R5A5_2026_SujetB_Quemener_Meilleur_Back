@@ -19,7 +19,6 @@ class TournoiCreate(BaseModel):
     plus gérées à la création) et son statut est toujours OUVERT par défaut."""
     nom: str = Field(..., min_length=1, max_length=50)
     description: Optional[str] = None
-    jeu_id: Optional[int] = None
     petite_finale: bool = False
 
 
@@ -27,9 +26,6 @@ class TournoiUpdate(BaseModel):
     """DTO de modification partielle d'un tournoi (PATCH)."""
     nom: Optional[str] = Field(default=None, min_length=1, max_length=50)
     description: Optional[str] = None
-    date_debut: Optional[str] = None
-    date_fin: Optional[str] = None
-    jeu_id: Optional[int] = None
     statut: Optional[StatutTournoi] = None
     petite_finale: Optional[bool] = None
 
@@ -50,7 +46,6 @@ class TournoiOut(BaseModel):
     nom: str
     description: Optional[str] = None
     statut: StatutTournoi
-    jeu_id: Optional[int] = None
     equipes_ids: List[int] = []
     petite_finale: bool = False
 

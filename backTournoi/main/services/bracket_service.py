@@ -1,7 +1,10 @@
 import random
 from typing import Optional
 
-from ..utils.data.data import matchs, get_tournoi, get_equipe
+from ..repo.equipe_repository import EquipeRepository
+from ..repo.match_repository import MatchRepository
+from ..repo.tournoi_repository import TournoiRepository
+from ..utils.data.transaction import transaction
 
 
 def _ordre_seeds(taille: int) -> list:
@@ -46,23 +49,29 @@ class BracketService:
     """Génération et lecture de l'arbre d'élimination directe."""
 
     @staticmethod
-    def generer(tournoi: dict) -> list:
+    def generer(tournoi: dict, conn=None) -> list:
         """Génère (une seule fois) tous les matchs de l'arbre, tirage aléatoire.
-        Lève ValueError si impossible. N'écrit dans `matchs` qu'en cas de succès."""
+        Lève ValueError si impossible. N'écrit dans `matchs` qu'en cas de succès.
+        `conn` : connexion de la transaction en cours (permet de rendre la génération
+        atomique avec le changement de statut) ; ouverte ici si absente."""
+        if conn is None:
+            with transaction() as conn_locale:
+                return BracketService.generer(tournoi, conn_locale)
+
         tournoi_id = tournoi["id"]
         equipes_ids = list(tournoi["equipes_ids"])
         n = len(equipes_ids)
 
         if n < 2:
             raise ValueError("Il faut au moins 2 équipes pour démarrer le tournoi.")
-        if any(m["tournoi_id"] == tournoi_id for m in matchs):
+        if MatchRepository.existe_pour_tournoi(conn, tournoi_id):
             raise ValueError("L'arbre de ce tournoi a déjà été généré.")
 
         random.shuffle(equipes_ids)
 
         taille = 1 << (n - 1).bit_length()          # puissance de 2 >= n
         nb_rounds = taille.bit_length() - 1
-        next_id = max((m["id"] for m in matchs), default=0) + 1
+        next_id = MatchRepository.prochain_id(conn)
 
         # Squelette : arbre[r][p]
         arbre = []
@@ -104,23 +113,25 @@ class BracketService:
         tous = [m for ligne in arbre for m in ligne]
         if petite:
             tous.append(petite)
-        matchs.extend(tous)
+        MatchRepository.inserer_plusieurs(conn, tous)
         return tous
 
     @staticmethod
     def arbre(tournoi_id: int) -> Optional[dict]:
         """Arbre structuré par tours, prêt pour l'affichage. rounds=[] si non généré."""
-        if not get_tournoi(tournoi_id):
-            return None
+        with transaction() as conn:
+            if not TournoiRepository.obtenir(conn, tournoi_id):
+                return None
+
+            noms = {e["id"]: e["nom"] for e in EquipeRepository.lister_par_tournoi(conn, tournoi_id)}
+            ms = MatchRepository.lister_par_tournoi(conn, tournoi_id)
 
         def nom(eid):
-            e = get_equipe(eid) if eid is not None else None
-            return e["nom"] if e else None
+            return noms.get(eid) if eid is not None else None
 
         def enrichi(m):
             return {**m, "equipe1_nom": nom(m["equipe1_id"]), "equipe2_nom": nom(m["equipe2_id"])}
 
-        ms = [m for m in matchs if m["tournoi_id"] == tournoi_id]
         principaux = [m for m in ms if not m["petite_finale"]]
         nb_rounds = max((m["round"] for m in principaux), default=0)
 
