@@ -51,3 +51,4 @@ class EquipeDetailOut(EquipeOut):
     joueurs: List[Optional[JoueurOut]] = []
     matchs: List[MatchOut] = []
     messages: Optional[List[MessageOut]] = None
+    capitaine_id: Optional[int] = None
