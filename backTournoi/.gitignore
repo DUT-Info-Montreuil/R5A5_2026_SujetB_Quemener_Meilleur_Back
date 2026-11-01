@@ -13,6 +13,18 @@
 *.db-shm
 *.db-journal
 
-/.idea
+.idea
 
+# Python
+__pycache__/
+*.py[cod]
+
+# Environnements virtuels
+.venv/
+venv/
+env/
+
+# Variables d'environnement
 .env
+.env.*
+!.env.example
